@@ -36,6 +36,7 @@ SOURCES=GR1D_module.F90 \
 	analysis.F90 \
 	neutrino_pressure.F90 \
 	start.F90 \
+	isomod.F90 \
 	M1/M1_init.F90 \
 	M1/M1_reconstruct.F90 \
 	M1/M1_closure.F90 \
