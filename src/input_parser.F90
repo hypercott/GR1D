@@ -3,6 +3,8 @@ subroutine input_parser
 
   use GR1D_module
   use ye_of_rho
+  use isomod, only: do_non_nse, isotope_profile,&
+       num_isotopes, do_isotope_ye
   implicit none
 
   integer :: tempint
@@ -269,6 +271,16 @@ subroutine input_parser
      call get_logical_parameter('force_restart_dump',force_restart_output)
   endif
 
+  ! isotope and reaction network stuff
+  call get_logical_parameter_optional('do_non_nse',do_non_nse,.false.)
+  if(do_non_nse) then
+     call get_string_parameter('isotope_file',isotope_profile)
+     call get_logical_parameter('do_isotope_ye',do_isotope_ye)
+  else
+     num_isotopes = 1 !default value
+  endif
+
+
 contains
 
  subroutine get_string_parameter(parname,par)
@@ -351,6 +363,85 @@ contains
 
  end subroutine get_string_parameter
 
+  subroutine get_string_parameter_optional(parname,par,found)
+
+   implicit none
+   character*(*) parname
+   character(*) par
+   character*(200) line_string
+   integer i,j,l,ll
+   integer isokay
+   logical found
+   character*(200) temp_string
+
+   found = .false.
+   
+   open(unit=27,file='parameters',status='unknown')
+
+11 continue
+   read(27,'(a)',end=20) line_string
+
+   ! separator is an equal sign '=', # is comment
+   i = index(line_string,'=')
+   j = index(line_string,'#')
+
+   if (i.eq.0.or.j.eq.1) goto 11
+   !   if the whole line is a comment or there is no
+   !   equal sign, then go on to the next line    
+
+   if(j.gt.0.and.j.lt.i) goto 11
+   !   if there is an equal sign, but it is in a comment
+   !   then go on to the next line
+
+
+   ! is this the right parameter? If not, cycle
+   temp_string=trim(adjustl(line_string(1:i-1)))
+   l=len(parname)
+   if(parname.ne.temp_string(1:l)) goto 11
+
+   !  If there is a comment in the line, exclude it!
+   l = len(line_string)
+   if (j.gt.0) l = j - 1
+
+   par = line_string(i+1:l)
+   ! now remove potential crap!
+   do ll=1,len(par)
+      if(par(ll:ll).eq.'\t') par(ll:ll) = ' '
+      if(par(ll:ll).eq.'"') par(ll:ll) = ' '
+      if(par(ll:ll).eq."'") par(ll:ll) = ' '
+   enddo
+   do ll=1,len(par) 
+      if(isokay(par(ll:ll)).ne.1) then
+         par(ll:ll) = ' '
+      endif
+   enddo
+
+   ! adjust left...
+   ll = len(par)
+   do while (par(1:1).eq.' '.or.par(1:1).eq.'\t') 
+      par(1:ll-1) = par(2:ll)
+   end do
+   ! get rid of trailing blanks
+   j = index(par," ")
+   par = par(1:j-1)
+
+   ! now look for " or ' and remove them
+   j=index(par,'"')
+   if(j.ne.0) stop "No quotes in my strings, please!"
+
+   j=index(par,"'")
+   if(j.ne.0) stop "No quotes in my strings, please!"
+
+   close(27)
+   found = .true.
+   return
+
+
+20 continue
+   found = .false.
+   close(27)
+ end subroutine get_string_parameter_optional
+
  subroutine get_double_parameter(parname,par)
 
    implicit none
@@ -394,8 +485,7 @@ contains
    character*(50) value_string
    integer temp_par
    logical par
-
-
+   
    call get_string_parameter(parname,value_string)
 
    value_string = trim(adjustl(value_string))
@@ -406,8 +496,37 @@ contains
    else
       par = .false.
    endif
-
+      
  end subroutine get_logical_parameter
+
+ 
+ subroutine get_logical_parameter_optional(parname,par,default)
+
+   implicit none
+
+   character*(*) parname
+   character*(50) value_string
+   integer temp_par
+   logical par
+   logical found
+   logical default
+   
+   call get_string_parameter_optional(parname,value_string,found)
+
+   if (found) then
+      value_string = trim(adjustl(value_string))
+      read(value_string,*) temp_par
+
+      if(temp_par.ne.0) then
+         par = .true.
+      else
+         par = .false.
+      endif
+   else
+      par = default
+   endif
+      
+ end subroutine get_logical_parameter_optional
 
  
 

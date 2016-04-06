@@ -3,6 +3,7 @@ subroutine collapse
 
   use GR1D_module
   use ye_of_rho
+  use isomod, only: do_non_nse
   implicit none
   
   real*8 xmin,xmax,mindx
@@ -47,6 +48,9 @@ subroutine collapse
   
   if(profile_type.eq.1) then
      call map_profile(profile_name)
+     if(do_non_nse) then
+        call map_profile_isotopes
+     endif
   else
      stop "profile_type not recognized!"
   endif

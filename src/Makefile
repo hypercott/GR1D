@@ -80,7 +80,7 @@ GR1D:  GR1D_module.o $(EXTRADEPS) $(OBJECTS)
 $(OBJECTS): %.o: %.F90 
 	$(F90) $(F90FLAGS) $(DEFS) $(MODINC) $(EXTRAINCS) -c $< -o $@
 
-GR1D.o: GR1D_module.o
+GR1D.o: GR1D_module.o isomod.o
 
 nuc_eos/nuc_eos.a: nuc_eos/*.F90 nuc_eos/*.f
 	$(MAKE) -C nuc_eos

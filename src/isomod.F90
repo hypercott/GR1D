@@ -2,6 +2,8 @@ module isomod
 
   implicit none
 
+  logical :: do_non_nse  ! advect isotopes
+  logical :: do_isotope_ye ! use Ye computed from isotopes
   character(len=256) :: isotope_profile
   integer :: num_isotopes
 

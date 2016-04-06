@@ -247,6 +247,8 @@ subroutine map_map(point_value,point_radius0,parray,pradius,zones)
   
 end subroutine map_map
 
+! ******************************************************************
+
 subroutine map_limit(lprofile_name)
   use GR1D_module, only: grid_rmax,rho_cut
   implicit none
@@ -306,3 +308,77 @@ subroutine map_limit(lprofile_name)
   
 
 end subroutine map_limit
+
+! ******************************************************************
+
+subroutine map_profile_isotopes
+
+  use isomod
+  use GR1D_module,only: n1,x1,ye,length_gf
+  implicit none
+
+  real*8, allocatable :: pradius(:)
+  real*8, allocatable :: pcomp(:,:)
+
+  integer :: profile_zones
+  integer :: i,j
+  real*8  :: normalize
+  real*8  :: buffer
+
+  write(6,*) "***** Setting up Isotope Advection"
+  
+  write(6,*) "Isotope file: ",trim(adjustl(isotope_profile))
+  
+  open(unit=666,file=trim(adjustl(isotope_profile)),form='formatted',&
+       action='read')
+  read(666,*) profile_zones, num_isotopes
+  write(*,*) "We have ",profile_zones, "composition profile zones."
+  write(*,*) "We have ",num_isotopes, "isotopes."
+
+  allocate(pradius(profile_zones))
+  allocate(pcomp(profile_zones,num_isotopes))
+  
+  ! allocate GR1D internal isotope datastructures
+  call allocate_compositions(num_isotopes)
+
+  !read in A's
+  read(666,*) comp_details(1:num_isotopes,1)
+
+  !read in Z's
+  read(666,*) comp_details(1:num_isotopes,2)
+
+  do i=1,profile_zones
+     read(666,*) buffer,pradius(i),pcomp(i,1:num_isotopes)
+  enddo
+  close(666)
+
+  !G = c = M_sun = 1
+  pradius = pradius * length_gf
+
+  ! map compositions onto grid
+  do i=1,n1
+     do j=1,num_isotopes
+        call map_map(compositions(i,j),x1(i),pcomp(:,j),&
+             pradius,profile_zones)
+     enddo
+  enddo
+  
+  ! normalize to one in each cell
+  do i=1,n1
+     normalize = sum(compositions(i,:))
+     compositions(i,:) = compositions(i,:)/normalize
+  enddo
+
+  if(do_isotope_ye) then
+     ! reset Ye based on isotope data
+     ye(i) = sum(compositions(i,1:num_isotopes) * &
+          (comp_details(1:num_isotopes,2) / &
+           comp_details(1:num_isotopes,1) ))
+     
+  endif
+
+  deallocate(pcomp)
+  deallocate(pradius)
+  write(6,*) "***** Done Setting up Isotope Advection"
+
+end subroutine map_profile_isotopes
