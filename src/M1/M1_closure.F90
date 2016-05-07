@@ -8,7 +8,7 @@ subroutine M1_closure
 
   use GR1D_module
   implicit none
-  
+
   !local variables
   real*8 :: tol,err
   real*8 :: oneM1en,oneM1flux,oneM1eddy_guess
@@ -166,7 +166,7 @@ subroutine M1_closure
                  if (M1closure.eq.'ME') then
                     ff3 = ff2*sqrt(ff2)
                     ff4 = ff2*ff2
-                    chi = 1.0d0/3.0d0+(3.0d0*ff2-ff3+3.0d0*ff4)*0.1333333333333333333d0
+                    chi = onethird+(3.0d0*ff2-ff3+3.0d0*ff4)*0.1333333333333333333d0
                  else if (M1closure.eq.'LP') then
                     chi = (3.0d0+4.0d0*ff2)/(5.0d0+2.0d0*sqrt(4.0d0-3.0d0*ff2))
                  else
