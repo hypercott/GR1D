@@ -176,6 +176,8 @@ subroutine M1_closure
                     chi = onethird - onethird*ff + ff2
                  else if (M1closure.eq.'Kershaw') then
                     chi = onethird + twothirds*ff2
+                 else if (M1closure.eq.'Janka') then
+                    chi = onethird*(1.0d0 + 0.5d0*ff**1.3064d0 + 1.5d0*ff**4.1342d0)
                  else
                     stop "define closure"
                  endif
