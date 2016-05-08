@@ -16,7 +16,7 @@ subroutine M1_closure
   real*8 :: udown(2)
   real*8 :: littlehupdown(2,2),Tupmunu(2,2)
   real*8 :: localJ,H2,Hup(2),Kthick(2,2),Kthin(2,2),Kup(2,2)
-  real*8 :: ff2,ff3,ff4,chi,oldprrguess
+  real*8 :: ff,ff2,ff3,ff4,chi,oldprrguess
   real*8 :: Lthin,Lthick,Luprrr,Ldownfupfr
   real*8 :: Wuprrr,Wdownfupfr
 
@@ -42,7 +42,7 @@ subroutine M1_closure
 
   !$OMP PARALLEL DO PRIVATE(alp2,onealp,invalp,invalp2,X2,oneX,invX,invX2,W2, &
   !$OMP oneW,v2,onev,udown,littlehupdown,h,i,j,oneM1en,oneM1flux,oneM1eddy_guess, &
-  !$OMP err,count,Tupmunu,localJ,Hup,Kup,ii,jj,H2,ff2,ff3,ff4,chi,Kthin,Kthick,oldprrguess, &
+  !$OMP err,count,Tupmunu,localJ,Hup,Kup,ii,jj,H2,ff,ff2,ff3,ff4,chi,Kthin,Kthick,oldprrguess, &
   !$OMP Lthin,Lthick,Luprrr,Ldownfupfr,Wuprrr,Wdownfupfr)
   do k=ghosts1+1,M1_imaxradii
 
@@ -163,12 +163,19 @@ subroutine M1_closure
                     
                  endif
 
+                 ff  = sqrt(ff2)
+                 ff2 = min(1.0d0,ff2)
+
                  if (M1closure.eq.'ME') then
                     ff3 = ff2*sqrt(ff2)
                     ff4 = ff2*ff2
                     chi = onethird+(3.0d0*ff2-ff3+3.0d0*ff4)*0.1333333333333333333d0
                  else if (M1closure.eq.'LP') then
                     chi = (3.0d0+4.0d0*ff2)/(5.0d0+2.0d0*sqrt(4.0d0-3.0d0*ff2))
+                 else if (M1closure.eq.'Wilson') then
+                    chi = onethird - onethird*ff + ff2
+                 else if (M1closure.eq.'Kershaw') then
+                    chi = onethird + twothirds*ff2
                  else
                     stop "define closure"
                  endif
