@@ -18,7 +18,7 @@ subroutine M1_closure
   real*8 :: localJ,H2,Hup(2),Kthick(2,2),Kthin(2,2),Kup(2,2)
   real*8 :: ff,ff2,ff3,ff4,chi,oldprrguess
   real*8 :: Lthin,Lthick,Luprrr,Ldownfupfr
-  real*8 :: Wuprrr,Wdownfupfr
+  real*8 :: Wuprrr,Wdownfupfr,J_prime
 
   integer :: h,k,i,j,ii,jj
   integer :: count
@@ -43,7 +43,7 @@ subroutine M1_closure
   !$OMP PARALLEL DO PRIVATE(alp2,onealp,invalp,invalp2,X2,oneX,invX,invX2,W2, &
   !$OMP oneW,v2,onev,udown,littlehupdown,h,i,j,oneM1en,oneM1flux,oneM1eddy_guess, &
   !$OMP err,count,Tupmunu,localJ,Hup,Kup,ii,jj,H2,ff,ff2,ff3,ff4,chi,Kthin,Kthick,oldprrguess, &
-  !$OMP Lthin,Lthick,Luprrr,Ldownfupfr,Wuprrr,Wdownfupfr)
+  !$OMP Lthin,Lthick,Luprrr,Ldownfupfr,Wuprrr,Wdownfupfr,J_prime)
   do k=ghosts1+1,M1_imaxradii
 
      !constants to help that only depend on spatial zone
@@ -106,14 +106,29 @@ subroutine M1_closure
                  oneM1en = q_M1m(k,i,j,1,1)/q_M1m(k,i,j,1,1)
                  oneM1flux = q_M1m(k,i,j,2,1)/q_M1m(k,i,j,1,1)
                  oneM1eddy_guess = q_M1(k,i,j,3)
+                 if (i.le.2) then
+                    J_prime = q_M1m(k,i,j,1,1)*M1_moment_to_distro(j)
+                 else
+                    J_prime = 0.25d0*q_M1m(k,i,j,1,1)*M1_moment_to_distro(j)
+                 endif
               else if (h.eq.2) then !middle state
                  oneM1en = q_M1(k,i,j,1)/q_M1(k,i,j,1)
                  oneM1flux = q_M1(k,i,j,2)/q_M1(k,i,j,1)
                  oneM1eddy_guess = q_M1(k,i,j,3)
+                 if (i.le.2) then
+                    J_prime = q_M1(k,i,j,1)*M1_moment_to_distro(j)
+                 else
+                    J_prime = 0.25d0*q_M1(k,i,j,1)*M1_moment_to_distro(j)
+                 endif
               else if (h.eq.3) then !plus state
                  oneM1en = q_M1p(k,i,j,1,1)/q_M1p(k,i,j,1,1)
                  oneM1flux = q_M1p(k,i,j,2,1)/q_M1p(k,i,j,1,1)
                  oneM1eddy_guess = q_M1(k,i,j,3)
+                 if (i.le.2) then
+                    J_prime = q_M1p(k,i,j,1,1)*M1_moment_to_distro(j)
+                 else
+                    J_prime = 0.25d0*q_M1p(k,i,j,1,1)*M1_moment_to_distro(j)
+                 endif
               endif
               
               err = 1.0d0
@@ -170,6 +185,13 @@ subroutine M1_closure
                     ff3 = ff2*sqrt(ff2)
                     ff4 = ff2*ff2
                     chi = onethird+(3.0d0*ff2-ff3+3.0d0*ff4)*0.1333333333333333333d0
+                 else if (M1closure.eq.'MEFD') then
+                    ff = ff/(1.0d0-J_prime)
+                    ff2 = ff*ff
+                    ff3 = ff2*ff
+                    ff4 = ff2*ff2
+                    chi = onethird+(1.0d0-J_prime)*(1.0d0-2.0d0*J_prime)* & 
+                         (3.0d0*ff2-ff3+3.0d0*ff4)*0.1333333333333333333d0
                  else if (M1closure.eq.'LP') then
                     chi = (3.0d0+4.0d0*ff2)/(5.0d0+2.0d0*sqrt(4.0d0-3.0d0*ff2))
                  else if (M1closure.eq.'Wilson') then
@@ -178,6 +200,10 @@ subroutine M1_closure
                     chi = onethird + twothirds*ff2
                  else if (M1closure.eq.'Janka') then
                     chi = onethird*(1.0d0 + 0.5d0*ff**1.3064d0 + 1.5d0*ff**4.1342d0)
+                 else if (M1closure.eq.'Janka2') then
+                    chi = onethird*(1.0d0 + ff**1.3450d0 + ff**5.1717d0)
+                 else if (M1closure.eq.'Eddington') then
+                    chi = onethird
                  else
                     stop "define closure"
                  endif
