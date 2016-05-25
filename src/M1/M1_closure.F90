@@ -187,6 +187,7 @@ subroutine M1_closure
                     chi = min(1.0d0,chi)
                  else if (M1closure.eq.'MEFD') then
                     ff = min(ff,1.0d0-J_prime)
+                    ff = ff/(1.0d0-J_prime)
                     ff2 = ff*ff
                     ff3 = ff2*ff
                     ff4 = ff2*ff2
