@@ -195,6 +195,7 @@ subroutine M1_closure
                          (3.0d0*ff2-ff3+3.0d0*ff4)*0.1333333333333333333d0
                     chi = min(1.0d0,chi)
                  else if (M1closure.eq.'LP') then
+                    ff2 = min(ff2,1.0d0)
                     chi = (3.0d0+4.0d0*ff2)/(5.0d0+2.0d0*sqrt(4.0d0-3.0d0*ff2))
                     chi = min(1.0d0,chi)
                  else if (M1closure.eq.'Wilson') then
