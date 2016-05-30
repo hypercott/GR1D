@@ -540,7 +540,7 @@ subroutine M1_implicitstep(dts,implicit_factor)
                          sum(local_Ltilde(j,1,:)*local_Hbar(j_prime,:)))*(R1pro-R1ann) - &
                          (local_J(j)*local_uup(1)+local_H(j,1))*local_Jbar(j_prime)*R0ann)* &
                          nulibtable_inv_energies(j_prime)
-
+                    
                     RF(j) = RF(j) + epannihil_temp
                     epannihil_sourceterms(j) = epannihil_sourceterms(j) - epannihil_temp
 
@@ -608,7 +608,7 @@ subroutine M1_implicitstep(dts,implicit_factor)
                  epannihil_sourceterm(k,i,j,2) = epannihil_sourceterms(j+number_groups)/(implicit_factor*dts*X2)
               enddo
               
-           endif
+           endif ! include_epannihil_kernels
 
            !implicit scattering
            if (include_Ielectron_imp) then
@@ -956,9 +956,9 @@ subroutine M1_implicitstep(dts,implicit_factor)
               dNLenergyfluxtermsdx(j+number_groups,2) = dFLdx(j+number_groups)-dFRdx(j+number_groups)
               dNLenergyfluxtermsdx(j+number_groups,3) = 0.0d0
              
-           endif
+           endif ! include_energy_coupling_imp
 
-           !setup up redisual function and jacobian for source terms
+           !setup up residual function and Jacobian for source terms
            !and energy coupling.  RF is computed above for the any
            !implicit scattering/pair production innermost zones
            do j=1,number_groups
@@ -1129,7 +1129,7 @@ subroutine M1_implicitstep(dts,implicit_factor)
               do j=1,number_groups
                  if (NLsolve_x(j).lt.0.0d0) then
                     problem_zone = j
-                    !here's a rough sence of how the terms empirically
+                    !here's a rough sense of how the terms empirically
                     !go at the origin.  The energy coupling terms, for
                     !the energy equation, are equally dominated by the
                     !pressure tensor terms
@@ -1142,7 +1142,8 @@ subroutine M1_implicitstep(dts,implicit_factor)
                     !we are solving).  The spatial flux for the energy
                     !will be dominated by F
                     if (nothappenyet2) then
-                       write(*,*) "transferring terms to implicit",i,k,j,eddy(j),eddytt(j)
+                       write(*,"(A30,3i4,1P10E15.6)") "transferring terms to implicit",&
+                            i,k,j,eddy(j),eddytt(j)
                        nothappenyet2 = .false.
                     endif
 
@@ -1183,7 +1184,16 @@ subroutine M1_implicitstep(dts,implicit_factor)
                        endif
                        sourceG(j,3) = M1en_Exp_term(j) + q_M1_old(k,i,j,1)                       
                        !be wary of this, ensure energy conservation is not too violated
-
+                    else if (q_M1_old(k,i,j,1).lt.1.0d-95) then
+                       ! C.D.Ott, 2016/05/30
+                       ! Special handling of groups that have tiny energy density.
+                       ! This is complementatry to the above, which is fixed
+                       ! by energy group.
+                       if (M1en_Exp_term(j).lt.0.0d0) then 
+                          q_M1_old(k,i,j,1) = 2.0d0*abs(M1en_Exp_term(j))
+                       endif
+                       sourceG(j,3) = M1en_Exp_term(j) + q_M1_old(k,i,j,1)                       
+                       !be wary of this, ensure energy conservation is not too violated
                     endif
                  endif
               enddo
@@ -1194,12 +1204,24 @@ subroutine M1_implicitstep(dts,implicit_factor)
            endif
 
            RF = RF/NLsolve_x
-
            if (count.gt.90) then
-              write(*,*) k,count, maxval(abs(RF)),maxloc(abs(RF))
-              write(*,*) RF(14)*NLsolve_x(14),RF(32)*NLsolve_x(32)
-              write(*,*) RF
-              write(*,*) NLsolve_x
+              !$OMP CRITICAL
+              myloc = maxloc(abs(RF))
+              write(*,*) "zone,species,count,max(RF),maxloc"
+              write(*,"(3i5,1P1E15.6,i5)")  k,i,count, maxval(abs(RF)),myloc
+              problem_zone = myloc(1)
+              if(problem_zone .le. number_groups) then
+                 write(*,*) "zone,species,count,problem group, old E(problem_group)"
+                 write(*,"(4i5,1P10E15.6)") k,i,count,problem_zone,q_M1(k,i,problem_zone,1)
+              else
+                 write(*,*) "zone,species,count,problem group, old F(problem_group)"
+                 write(*,"(4i5,1P10E15.6)") k,i,count,problem_zone-number_groups,&
+                      q_M1(k,i,problem_zone-number_groups,2)
+              endif
+!              write(*,*) RF(14)*NLsolve_x(14),RF(32)*NLsolve_x(32)
+!              write(*,*) RF
+!              write(*,*) NLsolve_x
+              !$OMP END CRITICAL
            endif
 
            if (maxval(abs(RF)).lt.1.0d-7) then
@@ -1263,7 +1285,10 @@ subroutine M1_implicitstep(dts,implicit_factor)
               if (nothappenyet1.and.k.lt.M1_imaxradii) then
                  nothappenyet1 = .false.
                  !this will happen a lot.  output is supressed to at most once per 10 time steps.
-                 if (mod(nt,10).eq.0) write(*,*) "warning: do_implicit_step: flux>en",i,j,k,nt,q_M1(k,i,j,2)/oneX,q_M1(k,i,j,1)
+                 if (mod(nt,10).eq.0) then
+                    write(*,*) "warning: do_implicit_step: flux>en"
+                    write(6,"(3i4,i7,1P10E15.6)") i,j,k,nt,q_M1(k,i,j,2)/oneX,q_M1(k,i,j,1)
+                 endif
               endif
               !fix it
               q_M1(k,i,j,2) = oneX*q_M1(k,i,j,2) / abs((1.0d0+1.0d-8)*q_M1(k,i,j,2)/q_M1(k,i,j,1))
