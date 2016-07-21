@@ -204,6 +204,9 @@ subroutine M1_closure
                  else if (M1closure.eq.'Kershaw') then
                     chi = onethird + twothirds*ff2
                     chi = min(1.0d0,chi)
+                 else if (M1closure.eq.'Auer') then
+                    chi = onethird + twothirds*ff
+                    chi = min(1.0d0,chi)
                  else if (M1closure.eq.'Janka') then
                     chi = onethird*(1.0d0 + 0.5d0*ff**1.3064d0 + 1.5d0*ff**3.56d0)
                     chi = min(1.0d0,chi)
