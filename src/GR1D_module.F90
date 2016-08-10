@@ -308,7 +308,7 @@ module GR1D_module
   !and pressure tensor
   !(for each species and
   !energy)
-  real*8,allocatable,save :: eas(:,:,:,:) !emissivity,absorbive
+  real*8,allocatable,save :: eas(:,:,:,:) ! emissivity, absorptive
   !crosssection, scattering
   !crosssection (for each
   !species and energy)
@@ -361,6 +361,7 @@ module GR1D_module
   real*8,parameter :: clite_g = 2.99792458d10
 
   real*8,parameter :: rho_gf = 1.61930347d-18
+  real*8,parameter :: rho_gf_inv = 1.0d0/rho_gf
   real*8,parameter :: press_gf = 1.80171810d-39
   real*8,parameter :: eps_gf = 1.11265006d-21
   real*8,parameter :: time_gf = 2.03001708d+05

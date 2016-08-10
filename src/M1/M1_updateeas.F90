@@ -24,14 +24,21 @@ subroutine M1_updateeas
   integer :: keytemp,keyerr
   real*8 :: eosdummy(17)
 
+  ! the eas array has the following entries:
+  ! eas( zone #, species, energy group, emis/absorb/scat )
+  ! so emis = 1, absorb = 2, scattering = 3
+
   if (M1_testcase_number.eq.0.or.M1_testcase_number.eq.1) then
 
-     !$OMP PARALLEL DO PRIVATE(xrho,xtemp,xye,tempspectrum,singlespecies_tempspectrum, &
-     !$OMP keytemp,keyerr,eosdummy,xeta,inelastic_tempspectrum,singlespecies_inelastic_tempspectrum, &
-     !$OMP epannihil_tempspectrum,singlespecies_epannihil_tempspectrum,blackbody_spectra,energy_x,i,j)
+     !$OMP PARALLEL DO PRIVATE(xrho,xtemp,xye,tempspectrum,&
+     !$OMP singlespecies_tempspectrum, &
+     !$OMP keytemp,keyerr,eosdummy,xeta,inelastic_tempspectrum,&
+     !$OMP singlespecies_inelastic_tempspectrum, &
+     !$OMP epannihil_tempspectrum,singlespecies_epannihil_tempspectrum,&
+     !$OMP blackbody_spectra,energy_x,i,j)
      do k=2,M1_imaxradii+ghosts1-1
         
-        xrho = rho(k)/rho_gf
+        xrho = rho(k) * rho_gf_inv
         xtemp = temp(k)
         xye = ye(k)
 
@@ -68,7 +75,7 @@ subroutine M1_updateeas
            eas(k,:,:,2) = tempspectrum(:,:,2)
            eas(k,:,:,3) = tempspectrum(:,:,3)
 
-           !re calculate emmisivity from black body.
+           !re-calculate emissivity from black body.
            keytemp = 1 !keep temperature
            keyerr = 0       
            call nuc_eos_full(xrho,xtemp,xye,eosdummy(1),eosdummy(2),eosdummy(3), &
