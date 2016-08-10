@@ -75,7 +75,7 @@ subroutine M1_updateeas
            eas(k,:,:,2) = tempspectrum(:,:,2)
            eas(k,:,:,3) = tempspectrum(:,:,3)
 
-           !re calculate emmisivity from black body.
+           !re-calculate emissivity from black body.
            keytemp = 1 !keep temperature
            keyerr = 0       
            call nuc_eos_full(xrho,xtemp,xye,eosdummy(1),eosdummy(2),eosdummy(3), &
