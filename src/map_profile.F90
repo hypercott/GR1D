@@ -35,18 +35,44 @@ subroutine map_profile(lprofile_name)
   allocate(pomega(profile_zones))
 
 ! new short format:  
-  if(do_rotation) then
-     do i=1,profile_zones
-        read(666,*) ibuffer,pmass(i),pradius(i),&
-             ptemp(i),prho(i),pvel(i),pye(i), &
-             pomega(i)
-     enddo
+  if(profile_type.eq.1) then
+     if(do_rotation) then
+        do i=1,profile_zones
+           read(666,*) ibuffer,pmass(i),pradius(i),&
+                ptemp(i),prho(i),pvel(i),pye(i), &
+                pomega(i)
+        enddo
+     else
+        do i=1,profile_zones
+           read(666,*) ibuffer,pmass(i),pradius(i),&
+                ptemp(i),prho(i),pvel(i),pye(i), &
+                buffer
+        enddo
+     endif
+  else if(profile_type.eq.2) then
+     ! In this case, we read in the pressure from the
+     ! profile, then reset the temperature to have
+     ! the same pressure as in the initial profile.
+     write(6,*) "Profile Type 2!"
+     write(6,*) "Resetting Temperature base on Profile Pressure"
+     if(do_rotation) then
+        do i=1,profile_zones
+           read(666,*) ibuffer,pmass(i),pradius(i),&
+                ptemp(i),prho(i),pvel(i),pye(i), &
+                pomega(i),ppress(i)
+        enddo
+     else
+        do i=1,profile_zones
+           read(666,*) ibuffer,pmass(i),pradius(i),&
+                ptemp(i),prho(i),pvel(i),pye(i), &
+                buffer,ppress(i)
+        enddo
+     endif
+     ! reset temperature based on pressure
+     call map_profile_reset_temp(profile_zones,prho,ptemp,pye,ppress)
   else
-     do i=1,profile_zones
-        read(666,*) ibuffer,pmass(i),pradius(i),&
-             ptemp(i),prho(i),pvel(i),pye(i), &
-             buffer
-     enddo
+     write(6,*) "Profile type unknown!"
+     stop
   endif
 
   ! go to c=G=Msun=1
@@ -159,6 +185,9 @@ subroutine map_profile(lprofile_name)
         stop "problem in initial data: eos: entropy"
      endif
   enddo
+
+!  call output_single(press/press_gf,"presstest.xg")
+
 
 end subroutine map_profile
 
@@ -382,3 +411,130 @@ subroutine map_profile_isotopes
   write(6,*) "***** Done Setting up Isotope Advection"
 
 end subroutine map_profile_isotopes
+
+! ******************************************************************
+
+subroutine map_profile_reset_temp(n,prho,ptemp,pye,ppress)
+
+  use GR1D_module,only: eoskey,eos_rf_prec,rho_gf,press_gf,&
+       temp_mev_to_kelvin
+  implicit none
+  
+  integer,intent(in)   :: n
+  real*8,intent(in)    :: prho(*)
+  real*8,intent(in)    :: pye(*)
+  real*8,intent(in)    :: ppress(*)
+  real*8,intent(inout) :: ptemp(*)
+
+  logical :: done
+  integer :: i,eosflag,keyerr,keytemp
+  integer :: count
+  real*8  :: xrho,xtemp,xtemp0,xtemp1,xtemp2
+  real*8  :: xpress,xpress0,xpress1,xpress2
+  real*8  :: err,dummy,err1,err2
+  real*8, parameter  :: prec = 1.0d-8
+  integer, parameter :: countmax = 100
+  real*8, parameter   :: rho_min = 1.0d3
+
+  keytemp = 1 
+  eosflag = 1 
+  keyerr = 0
+
+  do i=1,n
+     if(prho(i).le.rho_min) cycle
+     xrho = prho(i)*rho_gf
+     xtemp0 = ptemp(i)/temp_mev_to_kelvin
+     xpress0 = ppress(i)*press_gf
+
+     call eos(i,xrho,xtemp0,pye(i),dummy,xpress, &
+          keytemp,keyerr,eosflag,eoskey,eos_rf_prec)
+     if(keyerr.ne.0) then
+        stop "problem in initial data: map_profile_reset_temp"
+     endif
+     
+     ! temperature always increases when P increases;
+     ! let's hope that this here will bracket root
+     err = xpress-xpress0
+     if(err.lt.0) then
+        xtemp1 = xtemp0
+        xtemp2 = 2.0d0*xtemp0
+        call eos(i,xrho,xtemp2,pye(i),dummy,xpress2, &
+             keytemp,keyerr,eosflag,eoskey,eos_rf_prec)
+        if(keyerr.ne.0) then
+           stop "problem in initial data: map_profile_reset_temp"
+        endif
+
+        if( (xpress-xpress0) * (xpress2-xpress0) .gt. 0.0d0) then
+           write(6,*) "Branch 1"
+           write(6,"(1P10E15.6)") xrho/rho_gf,xtemp0,xtemp2,pye(i),&
+                (xpress2-xpress0)/xpress0, (xpress-xpress0)/xpress0
+           stop "Not bracketing root!"
+        endif
+
+     else
+        xtemp1 = 0.5d0*xtemp0
+        xtemp2 = xtemp0
+        call eos(i,xrho,xtemp1,pye(i),dummy,xpress1, &
+             keytemp,keyerr,eosflag,eoskey,eos_rf_prec)
+        if(keyerr.ne.0) then
+           stop "problem in initial data: map_profile_reset_temp"
+        endif
+
+        if( (xpress-xpress0) * (xpress1-xpress0) .gt. 0.0d0) then
+           write(6,*) "Branch 2"
+           write(6,"(1P10E15.6)") xrho/rho_gf,xtemp0,xtemp1,pye(i),&
+                (xpress2-xpress0)/xpress0, (xpress-xpress0)/xpress0
+           stop "Not bracketing root!"
+        endif
+
+     endif
+     
+     xtemp = 0.5d0 * (xtemp1 + xtemp2)
+
+     count = 0
+     done = .false.
+     do while(.not. done .and. count.lt.countmax)
+        count = count + 1
+        
+        call eos(i,xrho,xtemp,pye(i),dummy,xpress, &
+             keytemp,keyerr,eosflag,eoskey,eos_rf_prec)
+        if(keyerr.ne.0) then
+           stop "problem in initial data: map_profile_reset_temp"
+        endif
+        
+        err = abs(xpress - xpress0)/xpress0
+        if (err < prec) then
+           done = .true.
+        endif
+
+        if(.not.done) then
+
+           if( (xpress-xpress0) .gt. 0 ) then
+              xtemp2 = xtemp
+           else
+              xtemp1 = xtemp
+           endif
+
+           xtemp = 0.5d0 * (xtemp1 + xtemp2)
+
+        endif
+
+     enddo
+
+!     write(6,"(i6,1P10E15.6)") i,xtemp0,xtemp,err
+     if (count.ge.countmax) then
+        stop "bad -- no convergence in temperature reset"
+     endif
+
+!     call eos(i,xrho,xtemp,pye(i),dummy,xpress, &
+!          keytemp,keyerr,eosflag,eoskey,eos_rf_prec)
+!     write(6,"(i5,1P10E15.6)") i,xpress,xpress0,xtemp,xtemp0,pye(i)
+
+     ptemp(i) = xtemp*temp_mev_to_kelvin
+     
+
+  enddo
+!  stop "eh"
+
+
+end subroutine map_profile_reset_temp

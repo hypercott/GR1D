@@ -46,7 +46,7 @@ subroutine collapse
   write(*,*) "Setting up grid: ", trim(adjustl(gridtype))
   call grid(xmin,xmax,mindx)
   
-  if(profile_type.eq.1) then
+  if(profile_type.eq.1.or.profile_type.eq.2) then
      call map_profile(profile_name)
      if(do_non_nse) then
         call map_profile_isotopes

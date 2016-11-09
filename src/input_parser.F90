@@ -24,7 +24,9 @@ subroutine input_parser
      call get_string_parameter('profile_name',profile_name)
      call get_logical_parameter('WHW02profile',WHW02)
      call get_integer_parameter('profile_type',profile_type)
-     if (profile_type.ne.1) stop "Unknown profile"
+     if ((profile_type.ne.1).and.&
+          (profile_type.ne.2)) &
+          stop "Unknown profile type"
   endif
   call get_integer_parameter('geometry',geometry)
   if(geometry.eq.1) then
