@@ -448,7 +448,7 @@ subroutine map_profile_reset_temp(n,prho,ptemp,pye,ppress,&
   keyerr = 0
 
   do i=1,n
-     if(pradius(i).ge.rmax) cycle
+     if(pradius(i).ge.1.5d0*rmax) cycle
      if(prho(i).le.rho_min) cycle
      xrho = prho(i)*rho_gf
      xtemp0 = ptemp(i)/temp_mev_to_kelvin
