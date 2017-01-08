@@ -19,7 +19,10 @@ subroutine map_profile(lprofile_name)
 
   real*8,allocatable,save :: pradius_new(:)
   
-  real*8 :: kboltz_cgs = 1.380662d-16
+  real*8, parameter :: kboltz_cgs = 1.380662d-16
+  real*8 :: rmax
+
+  rmax = x1(n1) / length_gf
   
 ! read profile      
   open(666,file=trim(lprofile_name),status='unknown', & 
@@ -69,7 +72,8 @@ subroutine map_profile(lprofile_name)
         enddo
      endif
      ! reset temperature based on pressure
-     call map_profile_reset_temp(profile_zones,prho,ptemp,pye,ppress)
+     call map_profile_reset_temp(profile_zones,prho,ptemp,pye,ppress,&
+          rmax,pradius)
   else
      write(6,*) "Profile type unknown!"
      stop
@@ -414,7 +418,8 @@ end subroutine map_profile_isotopes
 
 ! ******************************************************************
 
-subroutine map_profile_reset_temp(n,prho,ptemp,pye,ppress)
+subroutine map_profile_reset_temp(n,prho,ptemp,pye,ppress,&
+     pradius,rmax)
 
   use GR1D_module,only: eoskey,eos_rf_prec,rho_gf,press_gf,&
        temp_mev_to_kelvin
@@ -424,6 +429,8 @@ subroutine map_profile_reset_temp(n,prho,ptemp,pye,ppress)
   real*8,intent(in)    :: prho(*)
   real*8,intent(in)    :: pye(*)
   real*8,intent(in)    :: ppress(*)
+  real*8,intent(in)    :: pradius(*)
+  real*8,intent(in)    :: rmax
   real*8,intent(inout) :: ptemp(*)
 
   logical :: done
@@ -434,13 +441,14 @@ subroutine map_profile_reset_temp(n,prho,ptemp,pye,ppress)
   real*8  :: err,dummy,err1,err2
   real*8, parameter  :: prec = 1.0d-8
   integer, parameter :: countmax = 100
-  real*8, parameter   :: rho_min = 1.0d3
+  real*8, parameter   :: rho_min = 1.5d3
 
   keytemp = 1 
   eosflag = 1 
   keyerr = 0
 
   do i=1,n
+     if(pradius(i).ge.rmax) cycle
      if(prho(i).le.rho_min) cycle
      xrho = prho(i)*rho_gf
      xtemp0 = ptemp(i)/temp_mev_to_kelvin
@@ -468,7 +476,7 @@ subroutine map_profile_reset_temp(n,prho,ptemp,pye,ppress)
            write(6,*) "Branch 1"
            write(6,"(1P10E15.6)") xrho/rho_gf,xtemp0,xtemp2,pye(i),&
                 (xpress2-xpress0)/xpress0, (xpress-xpress0)/xpress0
-           stop "Not bracketing root!"
+           stop "Not bracketing pressure root in map_profile!"
         endif
 
      else
@@ -484,7 +492,7 @@ subroutine map_profile_reset_temp(n,prho,ptemp,pye,ppress)
            write(6,*) "Branch 2"
            write(6,"(1P10E15.6)") xrho/rho_gf,xtemp0,xtemp1,pye(i),&
                 (xpress2-xpress0)/xpress0, (xpress-xpress0)/xpress0
-           stop "Not bracketing root!"
+           stop "Not bracketing pressure root in map_profile!"
         endif
 
      endif
@@ -531,7 +539,6 @@ subroutine map_profile_reset_temp(n,prho,ptemp,pye,ppress)
 !     write(6,"(i5,1P10E15.6)") i,xpress,xpress0,xtemp,xtemp0,pye(i)
 
      ptemp(i) = xtemp*temp_mev_to_kelvin
-     
 
   enddo
 !  stop "eh"
