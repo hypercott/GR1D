@@ -419,7 +419,8 @@ end subroutine map_profile_isotopes
 ! ******************************************************************
 
 subroutine map_profile_reset_temp(n,prho,ptemp,pye,ppress,&
-     pradius,rmax)
+     rmax,pradius)
+
 
   use GR1D_module,only: eoskey,eos_rf_prec,rho_gf,press_gf,&
        temp_mev_to_kelvin
