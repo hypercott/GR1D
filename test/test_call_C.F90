@@ -13,7 +13,9 @@ program test_call_C
 
   call testic(a,b,c)
 
+  
   write(6,*) c
 
-
+  call MPIinit()
+  call MPIwork()
 end program test_call_C
