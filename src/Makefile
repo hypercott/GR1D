@@ -52,7 +52,6 @@ OBJECTS=$(SOURCES:.F90=.o )
 
 EXTRAINCS += $(HDF5INCS)
 EXTRAOBJECTS += $(HDF5LIBS)
-
 ifeq ($(HAVE_NUC_EOS),1)
 	DEFS += -DHAVE_NUC_EOS
 	EXTRADEPS += nuc_eos/nuc_eos.a
@@ -64,10 +63,14 @@ ifeq ($(HAVE_LEAK_ROS),1)
 	EXTRAOBJECTS += leakage_rosswog/leakage_rosswog.a 
 	EXTRADEPS += leakage_rosswog/leakage_rosswog.a 
 endif	
+ifeq ($(HAVE_MC_CLOSURE),1)
+	DEFS += -DHAVE_MC_CLOSURE
+	EXTRAOBJECTS += $(SEDONULIB) -lstdc++
+endif	
 
-EXTRAINCS += -Inulibtable
-EXTRAOBJECTS += nulibtable/nulibtable.a
-EXTRADEPS += nulibtable/nulibtable.a
+EXTRAINCS += -I$(NULIBDIR)
+EXTRAOBJECTS += $(NULIBDIR)/nulib.a
+#EXTRADEPS += $(NULIBDIR)/nulibtable.a
 
 ifeq ($(HAVE_LAPACK),1)
 	EXTRAOBJECTS += $(LAPACKLIBS)

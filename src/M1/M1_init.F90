@@ -9,7 +9,7 @@ subroutine M1_init
        temp_mev_to_kelvin,number_species,volume,pi,M1_moment_to_distro,clite, &
        hbarc_mevcm,M1_testcase_number,v_order,include_nes_kernels, &
        M1_moment_to_distro_inverse,nulib_kernel_gf,number_species_to_evolve, &
-       include_epannihil_kernels,eos_rf_prec
+       include_epannihil_kernels,eos_rf_prec, sedonu, v1, vphi1
   use nulibtable
 
   implicit none
@@ -118,6 +118,12 @@ subroutine M1_init
   endif
 
   call M1_updateeas
+
+#ifdef HAVE_MC_CLOSURE
+  call initialize_gr1d_sedonu(x1i/length_gf, M1_imaxradii, ghosts1, &
+       nulibtable_ebottom, nulibtable_etop, nulibtable_number_groups, &
+       nulibtable_number_species, sedonu)
+#endif
 
   ! Note the following:
   ! In ZelmaniM1, we set radition initially to equilibrium.

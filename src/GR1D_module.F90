@@ -1,6 +1,7 @@
 ! -*-f90-*-
 module GR1D_module
 
+  use iso_c_binding
   character*80 :: input_file = "parameters"
 
   ! parameters to be read
@@ -390,4 +391,6 @@ module GR1D_module
   real*8,parameter :: twothirds = 2.0d0/3.0d0
   real*8,parameter :: onethird = 1.0d0/3.0d0
 
+  type(c_ptr) :: sedonu
+  
 end module GR1D_module

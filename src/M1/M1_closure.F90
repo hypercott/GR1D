@@ -4,6 +4,21 @@
 !q_M1_extra(:,:,:,:).  We do this for the zone center and the
 !reconstructed values
 
+#ifdef HAVE_MC_CLOSURE
+
+subroutine M1_closure
+  use GR1D_module
+  implicit none
+
+  ! local variables
+  
+  ! get closure from Sedonu
+  call calculate_MC_closure(q_M1, q_M1_extra, eas, nt, sedonu)
+  
+end subroutine M1_closure
+
+#else
+
 subroutine M1_closure
 
   use GR1D_module
@@ -327,3 +342,4 @@ subroutine M1_closure
 
 end subroutine M1_closure
 
+#endif
