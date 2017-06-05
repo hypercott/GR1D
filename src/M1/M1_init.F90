@@ -120,9 +120,7 @@ subroutine M1_init
   call M1_updateeas
 
 #ifdef HAVE_MC_CLOSURE
-  call initialize_gr1d_sedonu(x1i/length_gf, M1_imaxradii, ghosts1, &
-       nulibtable_ebottom, nulibtable_etop, nulibtable_number_groups, &
-       nulibtable_number_species, sedonu)
+  call initialize_gr1d_sedonu(x1i/length_gf, n1,M1_imaxradii, ghosts1, sedonu)
 #endif
 
   ! Note the following:

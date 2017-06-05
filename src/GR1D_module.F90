@@ -391,6 +391,6 @@ module GR1D_module
   real*8,parameter :: twothirds = 2.0d0/3.0d0
   real*8,parameter :: onethird = 1.0d0/3.0d0
 
-  type(c_ptr) :: sedonu
+  type(c_ptr), save :: sedonu
   
 end module GR1D_module
