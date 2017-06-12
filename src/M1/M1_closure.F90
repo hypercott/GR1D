@@ -328,12 +328,15 @@ subroutine M1_closure
 
 #ifdef HAVE_MC_CLOSURE
   ! get closure from Sedonu. Keep closure calculation above to fill in chi.
-  if (t_bounce>0 .and. time-t_bounce>0.01) then
-     call calculate_MC_closure(q_M1, q_M1p, q_M1m, &
-          q_M1_extra, q_M1_extrap, q_M1_extram, &
-          eas, rho*rho_gf_inv, temp*temp_mev_to_kelvin, ye, v1*clite, &
-          X, nt, sedonu)
-  endif
+  !if (t_bounce>0 .and. time-t_bounce>0.01) then
+  !print*, "q_M1: ", shape(q_M1)
+  !print*, "q_M1_extra: ", shape(q_M1_extra)
+  !print*, "X: ", shape(X)
+  call calculate_MC_closure(q_M1, q_M1p, q_M1m, &
+       q_M1_extra, q_M1_extrap, q_M1_extram, &
+       eas, rho*rho_gf_inv, temp*temp_mev_to_kelvin, ye, v1*clite, &
+       X, nt, dt, sedonu)
+  !endif
 #endif
 
   
