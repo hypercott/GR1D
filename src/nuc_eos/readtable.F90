@@ -7,6 +7,7 @@ subroutine readtable(eos_filename)
   use hdf5 
 
   implicit none
+  include 'mpif.h'
 
   character(*) eos_filename
 
@@ -20,15 +21,23 @@ subroutine readtable(eos_filename)
 
   real*8 amu_cgs_andi
   real*8 buffer1,buffer2,buffer3,buffer4
+  integer myID, Nprocs, ierr
   accerr=0
 
-  write(*,*) "Reading Nuclear EOS Table"
+  call MPI_COMM_RANK (MPI_COMM_WORLD, myID, ierr)
+  call MPI_COMM_SIZE (MPI_COMM_WORLD, Nprocs, ierr)
+
+  if(myID==0) then
+     write(*,*) "Reading Nuclear EOS Table"
+  endif
 
   call h5open_f(error)
 
   call h5fopen_f (trim(adjustl(eos_filename)), H5F_ACC_RDONLY_F, file_id, error)
 
-  write(6,*) trim(adjustl(eos_filename))
+  if(myID==0) then
+     write(6,*) trim(adjustl(eos_filename))
+  endif
 
 ! read scalars
   dims1(1)=1
@@ -58,8 +67,10 @@ subroutine readtable(eos_filename)
      stop "Could not read EOS table file"
   endif
 
-  write(message,"(a25,i5,i5,i5)") "We have nrho ntemp nye: ", nrho,ntemp,nye
-  write(*,*) message
+  if(myID==0) then
+     write(message,"(a25,i5,i5,i5)") "We have nrho ntemp nye: ", nrho,ntemp,nye
+     write(*,*) message
+  endif
 
   allocate(alltables(nrho,ntemp,nye,nvars))
 
@@ -227,7 +238,9 @@ subroutine readtable(eos_filename)
   eos_tempmin = 10.0d0**logtemp(1)
   eos_tempmax = 10.0d0**logtemp(ntemp)
 
-  write(6,*) "Done reading eos tables"
+  if(myID==0) then
+     write(6,*) "Done reading eos tables"
+  endif
 
 
 end subroutine readtable

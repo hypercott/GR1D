@@ -1142,8 +1142,10 @@ subroutine M1_implicitstep(dts,implicit_factor)
                     !we are solving).  The spatial flux for the energy
                     !will be dominated by F
                     if (nothappenyet2) then
-                       write(*,"(A30,3i4,1P10E15.6)") "transferring terms to implicit",&
-                            i,k,j,eddy(j),eddytt(j)
+                       if(myID==0) then
+                          write(*,"(A30,3i4,1P10E15.6)") "transferring terms to implicit",&
+                               i,k,j,eddy(j),eddytt(j)
+                       endif
                        nothappenyet2 = .false.
                     endif
 
@@ -1286,8 +1288,10 @@ subroutine M1_implicitstep(dts,implicit_factor)
                  nothappenyet1 = .false.
                  !this will happen a lot.  output is supressed to at most once per 10 time steps.
                  if (mod(nt,10).eq.0) then
-                    write(*,*) "warning: do_implicit_step: flux>en"
-                    write(6,"(3i4,i7,1P10E15.6)") i,j,k,nt,q_M1(k,i,j,2)/oneX,q_M1(k,i,j,1)
+                    if(myID==0) then
+                       write(*,*) "warning: do_implicit_step: flux>en"
+                       write(6,"(3i4,i7,1P10E15.6)") i,j,k,nt,q_M1(k,i,j,2)/oneX,q_M1(k,i,j,1)
+                    endif
                  endif
               endif
               !fix it

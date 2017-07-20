@@ -13,7 +13,9 @@ subroutine problem
   character(len=100) outfilename
   
   ! which eos do we want to use; eos scalars
-  write(*,*) "Setting up EOS: ", eoskey
+  if(myID==0) then
+     write(*,*) "Setting up EOS: ", eoskey
+  endif
   if(eoskey.eq.1) then
      gamma1 = hybridgamma1
      gamma2 = hybridgamma2
@@ -30,35 +32,47 @@ subroutine problem
      idealgamma = 1.4d0
      idealK1 =  1.2435d15 * (0.5d0**(4.d0/3.d0))
   else if(eoskey.eq.3) then
-     write(6,*) "Using the NUC_EOS interface."
+     if(myID==0) then
+        write(6,*) "Using the NUC_EOS interface."
+     endif
   else
      stop "choice of eos not implemented"
   endif
   
   if(initial_data.eq."Collapse") then
 
-     write(*,*) "Collapsing a star!"
+     if(myID==0) then
+        write(*,*) "Collapsing a star!"
+     endif
      call collapse
      
   else if (initial_data .eq. "Shocktube") then
-     
-     write(*,*) "Shock Tube!"
+
+     if(myID==0) then
+        write(*,*) "Shock Tube!"
+     endif
      call shocktube
      
   else if(initial_data.eq."Sedov") then
      
-     write(*,*) "Sedov Blast Wave!"
+     if(myID==0) then
+        write(*,*) "Sedov Blast Wave!"
+     endif
      call sedov
      
   else if(initial_data.eq."OSC") then
 
-     write(*,*) "OSCing!"
+     if(myID==0) then
+        write(*,*) "OSCing!"
+     endif
      call OSC
 
   else if(initial_data.eq."M1test") then
 
      !setup everything in for the M1test
-     write(*,*) "Setting up M1 test case #",M1_testcase_number
+     if(myID==0) then
+        write(*,*) "Setting up M1 test case #",M1_testcase_number
+     endif
      call M1test(M1_testcase_number)
 
   else 

@@ -30,8 +30,10 @@ subroutine collapse
         write(*,*) "No ye(rho) prescription"
      endif
   endif
-  
-  write(6,"(A15,A60)") "Initial data: ",profile_name
+
+  if(myID==0) then
+     write(6,"(A15,A60)") "Initial data: ",profile_name
+  endif
   
   if (do_profile_rmax) then
      call map_limit(profile_name)
@@ -42,8 +44,10 @@ subroutine collapse
   
   ! minimum grid spacing; does only apply if geometry = 2 & grid = log
   mindx = grid_custom_dx1*length_gf !1 km
-  
-  write(*,*) "Setting up grid: ", trim(adjustl(gridtype))
+
+  if(myID==0) then
+     write(*,*) "Setting up grid: ", trim(adjustl(gridtype))
+  endif
   call grid(xmin,xmax,mindx)
   
   if(profile_type.eq.1.or.profile_type.eq.2) then
@@ -87,10 +91,14 @@ subroutine collapse
   endif
 
   if (GR) then
-     write(*,*) "Using GR, totalmass_grav: ", totalmass/mass_gf, " grams"
-     write(*,*) "          totalmass_bary: ", mass(n1-ghosts1+1)/mass_gf, " grams"
+     if(myID==0) then
+        write(*,*) "Using GR, totalmass_grav: ", totalmass/mass_gf, " grams"
+        write(*,*) "          totalmass_bary: ", mass(n1-ghosts1+1)/mass_gf, " grams"
+     endif
   else
-     write(*,*) "Using Newtonian, totalmass_bary: ", mass(n1-ghosts1+1)/mass_gf, " grams"
+     if(myID==0) then
+        write(*,*) "Using Newtonian, totalmass_bary: ", mass(n1-ghosts1+1)/mass_gf, " grams"
+     endif
   endif
 
 end subroutine collapse

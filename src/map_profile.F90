@@ -283,7 +283,7 @@ end subroutine map_map
 ! ******************************************************************
 
 subroutine map_limit(lprofile_name)
-  use GR1D_module, only: grid_rmax,rho_cut
+  use GR1D_module, only: grid_rmax,rho_cut,myID
   implicit none
       
   character*(*) lprofile_name
@@ -326,8 +326,10 @@ subroutine map_limit(lprofile_name)
         grid_rmax = pradius(i)
      endif
   enddo
-  
-  write(*,*) "Maximum Radius (at rho=",rho_cut,") set to: ", grid_rmax
+
+  if(myID==0) then
+     write(*,*) "Maximum Radius (at rho=",rho_cut,") set to: ", grid_rmax
+  endif
   
   close(666)
   
