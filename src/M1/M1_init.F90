@@ -13,6 +13,7 @@ subroutine M1_init
   use nulibtable
 
   implicit none
+  include 'mpif.h'
 
   integer :: i, j, k, l
   real*8 :: tmp1, tmp2
@@ -20,6 +21,10 @@ subroutine M1_init
   real*8 :: eosdummy(17)
   real*8 :: xrho,xtemp,xye,xeta
   real*8 :: ensum
+  integer myID, Nprocs, ierr
+  
+  call MPI_COMM_RANK (MPI_COMM_WORLD, myID, ierr)
+  call MPI_COMM_SIZE (MPI_COMM_WORLD, Nprocs, ierr)
 
   call nulibtable_reader(opacity_table,include_nes_kernels,&
        include_epannihil_kernels)
@@ -76,7 +81,7 @@ subroutine M1_init
   ! check that density of outer M1 radius is above the minimum
   ! density of the NuLib table
   if (rho(M1_imaxradii)*rho_gf_inv.lt.&
-       10.0d0**nulibtable_logrho(1)) then
+       10.0d0**nulibtable_logrho(1) .and. myID==0) then
      write(6,*) "******************"
      write(6,*) "Density at maximum M1 radius is below NuLib table minimum!"
      write(6,"(A16,i5)") "M1_imaxradii = ",M1_imaxradii
@@ -92,12 +97,16 @@ subroutine M1_init
   endif
 
   if (v_order.eq.0.or.v_order.eq.-1) then
-     write(*,*) "Velocity order is:",v_order," (-1 for all orders)"
+     if(myID==0) then
+        write(*,*) "Velocity order is:",v_order," (-1 for all orders)"
+     endif
   else
      stop "implement v_order"
   endif
-  write(*,*) "M1_init: extract radii at", x1(M1_imaxradii)/length_gf, &
-       "index:", M1_imaxradii, "of", n1
+  if(myID==0) then
+     write(*,*) "M1_init: extract radii at", x1(M1_imaxradii)/length_gf, &
+          "index:", M1_imaxradii, "of", n1
+  endif
 
   !conversion from energy (momentum) density to angle integrated
   !distribution function (*\mu)
@@ -108,8 +117,10 @@ subroutine M1_init
   M1_moment_to_distro_inverse(:) = 1.0d0/M1_moment_to_distro(:)
 
   if (M1_imaxradii.gt.n1-ghosts1) then 
-     write(6,*) "M1_init: Your extraction radii is too big"
-     write(6,*) " "
+     if(myID==0) then
+        write(6,*) "M1_init: Your extraction radii is too big"
+        write(6,*) " "
+     endif
      stop 
   endif
 
@@ -169,8 +180,10 @@ subroutine M1_init
 !        write(6,"(i5,1P10E15.6)") j,nulibtable_energies(j)/nulib_energy_gf,&
 !             nulibtable_ewidths(j),ensum
      enddo
-     write(6,"(i5,1P10E15.6)") i, x1(i)/length_gf, ensum*mev_to_erg
-     write(666,"(i5,1P10E15.6)") i, x1(i)/length_gf, ensum*mev_to_erg
+     if(myID==0) then
+        write(6,"(i5,1P10E15.6)") i, x1(i)/length_gf, ensum*mev_to_erg
+        write(666,"(i5,1P10E15.6)") i, x1(i)/length_gf, ensum*mev_to_erg
+     endif
 
   enddo
   close(666)
