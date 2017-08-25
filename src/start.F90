@@ -88,7 +88,7 @@ subroutine start
   endif
 
   !setup dynamic output control
-  if(dynamic_output_control) then
+  if(dynamic_output_control .and. myID==0) then
      call output_control
   endif
 
